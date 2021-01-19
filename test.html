@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <script src="https://cdn.jsdelivr.net/npm/vega@5.17.1"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vega-lite@4.17.0"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vega-embed@6"></script>
+</head>
+<body onload="do_it();">
+
+<div id="vis"></div>
+
+<script type="text/javascript">
+  function uniq(a) {
+      return a.sort().filter(function(item, pos, ary) {
+          return !pos || item != ary[pos - 1];
+      });
+  }
+
+  async function do_it() {
+    const uniqueCurrencies = objList =>
+      uniq( objList.map(x => x.currency) );
+    const mkTooltipOptions = objList =>
+      uniqueCurrencies(objList).map(x => ({"field": x, "type": "quantitative"}));
+
+    // (x => ({ "field": x.currency, "type": "quantitative" }));
+
+    // [
+      //   {"field": "AAPL", "type": "quantitative"},
+      //   {"field": "AMZN", "type": "quantitative"},
+      //   {"field": "GOOG", "type": "quantitative"},
+      //   {"field": "IBM", "type": "quantitative"},
+      //   {"field": "MSFT", "type": "quantitative"}
+      // ]
+
+    let url = 'data/test.json';
+    let response = await fetch(url);
+    let data = await response.json();
+    console.log(data);
+    const tooltipOptions = mkTooltipOptions(data);
+
+    var spec =
+      {
+        "$schema": "https://vega.github.io/schema/vega-lite/v4.json",
+        "data": {
+          "url": "data/test.json",
+          "transform": [
+            {"type": "filter", "expr": "datum.qty > 10000000"}
+          ]
+        },
+        "format": {
+          "parse": {
+            "run.time_start": "date",
+            "qty": "number",
+            "currency": "string"
+          }
+        },
+        "width": 800,
+        "height": 600,
+        "encoding": {
+          "x": {
+            "field": "run.time_start",
+            "type": "temporal"
+          },
+        },
+        "layer": [
+          {
+            "encoding": {
+              "color": {"field": "currency", "type": "nominal"},
+              "y": {"field": "qty", "type": "quantitative"}
+            },
+            "layer": [
+              {"mark": "line"},
+              {"transform": [{"filter": {"selection": "hover"}}], "mark": "point"}
+            ]
+          },
+          {
+            "transform": [{"pivot": "currency", "value": "qty", "groupby": ["run.time_start"]}],
+            "mark": "rule",
+            "encoding": {
+              "opacity": {
+                "condition": {"value": 0.3, "selection": "hover"},
+                "value": 0
+              },
+              // "tooltip": tooltipOptions
+              "tooltip": [
+                {"field": "BTC", "type": "quantitative"},
+                {"field": "ETH", "type": "quantitative"},
+                {"field": "XRP", "type": "quantitative"},
+                {"field": "ADA", "type": "quantitative"},
+                // {"field": "MSFT", "type": "quantitative"}
+              ]
+            },
+            "selection": {
+              "hover": {
+                "type": "single",
+                "fields": ["run.time_start"],
+                "nearest": true,
+                "on": "mouseover",
+                "empty": "none",
+                "clear": "mouseout"
+              }
+            }
+          }
+        ]
+      }
+
+    vegaEmbed('#vis', spec).then(function(result) {
+      console.log(result);
+      // Access the Vega view instance (https://vega.github.io/vega/docs/api/view/) as result.view
+    }).catch(console.error);
+  }
+</script>
+</body>
+</html>
