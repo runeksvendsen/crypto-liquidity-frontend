@@ -35,74 +35,71 @@
     let url = 'data/test.json';
     let response = await fetch(url);
     let data = await response.json();
-    console.log(data);
+
     const tooltipOptions = mkTooltipOptions(data);
+    console.log(tooltipOptions);
 
     var spec =
-      {
-        "$schema": "https://vega.github.io/schema/vega-lite/v4.json",
-        "data": {
-          "url": "data/test.json",
-          "transform": [
-            {"type": "filter", "expr": "datum.qty > 10000000"}
-          ]
-        },
-        "format": {
+    {
+      "$schema": "https://vega.github.io/schema/vega-lite/v4.json",
+      "data": {
+        "url": "data/test.json",
+      },
+      "format": {
           "parse": {
             "run.time_start": "date",
             "qty": "number",
             "currency": "string"
           }
         },
-        "width": 800,
-        "height": 600,
-        "encoding": {
-          "x": {
-            "field": "run.time_start",
-            "type": "temporal"
-          },
+      "width": 400,
+      "height": 300,
+      "encoding": {
+        "x": {
+          "field": "run.time_start",
+          "type": "temporal"
         },
-        "layer": [
-          {
-            "encoding": {
-              "color": {"field": "currency", "type": "nominal"},
-              "y": {"field": "qty", "type": "quantitative"}
+      },
+      "layer": [
+        {
+          "encoding": {
+            "color": {"field": "currency", "type": "nominal"},
+            "y": {"field": "qty", "type": "quantitative"}
+          },
+          "layer": [
+            {"mark": "line"},
+            {"transform": [{"filter": {"selection": "hover"}}], "mark": "point"}
+          ]
+        },
+        {
+          "transform": [{"pivot": "currency", "value": "qty", "groupby": ["run.time_start"]}],
+          "mark": "rule",
+          "encoding": {
+            "opacity": {
+              "condition": {"value": 0.3, "selection": "hover"},
+              "value": 0
             },
-            "layer": [
-              {"mark": "line"},
-              {"transform": [{"filter": {"selection": "hover"}}], "mark": "point"}
+            "tooltip": [
+              {"field": "BTC", "type": "quantitative"},
+              {"field": "ETH", "type": "quantitative"},
+              {"field": "XRP", "type": "quantitative"},
+              {"field": "ADA", "type": "quantitative"},
+              {"field": "AAVE", "type": "quantitative"}
             ]
           },
-          {
-            "transform": [{"pivot": "currency", "value": "qty", "groupby": ["run.time_start"]}],
-            "mark": "rule",
-            "encoding": {
-              "opacity": {
-                "condition": {"value": 0.3, "selection": "hover"},
-                "value": 0
-              },
-              // "tooltip": tooltipOptions
-              "tooltip": [
-                {"field": "BTC", "type": "quantitative"},
-                {"field": "ETH", "type": "quantitative"},
-                {"field": "XRP", "type": "quantitative"},
-                {"field": "ADA", "type": "quantitative"},
-                // {"field": "MSFT", "type": "quantitative"}
-              ]
-            },
-            "selection": {
-              "hover": {
-                "type": "single",
-                "fields": ["run.time_start"],
-                "nearest": true,
-                "on": "mouseover",
-                "empty": "none",
-                "clear": "mouseout"
-              }
+          "selection": {
+            "hover": {
+              "type": "single",
+              "fields": ["run.time_start"],
+              "nearest": true,
+              "on": "mouseover",
+              "empty": "none",
+              "clear": "mouseout"
             }
           }
-        ]
-      }
+        }
+      ]
+    }
 
     vegaEmbed('#vis', spec).then(function(result) {
       console.log(result);
