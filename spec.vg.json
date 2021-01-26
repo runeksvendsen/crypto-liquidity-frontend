@@ -1,0 +1,70 @@
+{
+  "$schema": "https://vega.github.io/schema/vega-lite/v4.json",
+  "data": {
+    "url": "http://34.86.24.45/liquidity/all?slippage=0.5&numeraire=USD&limit=10"
+  },
+  // "format": {
+  //     "parse": {
+  //       "run.time_start": "date",
+  //       "qty": "number",
+  //       "currency": "string"
+  //     }
+  //   },
+  "width": 600,
+  "height": 450,
+  "transform": [
+    {"filter": "datum.qty > 0"},
+    {"calculate": "1e-6 * datum.qty", "as": "qty_mm"}
+  ],
+  "encoding": {
+    "x": {
+      "field": "run.time_start",
+      "type": "temporal",
+      "title": "Time"
+    },
+    "tooltip": [
+      {"field": "currency", "title": "Currency", "type": "nominal"},
+      {"field": "qty_mm", "title": "Quantity (MM USD)", "type": "quantitative"},
+      {"field": "run.time_start", "title": "Time", "type": "temporal"}
+    ]
+  },
+  "layer": [
+    {
+      "encoding": {
+        "color": {"field": "currency", "type": "nominal", "title": "Currency"},
+        "y": {
+          "field": "qty_mm",
+          "type": "quantitative",
+          "title": "Quantity (MM USD)",
+          "scale": {"type": "log"}
+        }
+      },
+      "layer": [
+        {"mark": "line"},
+        {"mark": "point"},
+        {"transform": [{"filter": {"selection": "hover"}}], "mark": "point"}
+      ]
+    },
+    {
+      "transform": [{"pivot": "currency", "value": "qty_mm", "groupby": ["run.time_start"]}],
+      "mark": "rule",
+      "encoding": {
+        "opacity": {
+          "condition": {"value": 0.3, "selection": "hover"},
+          "value": 0
+        },
+        "tooltip": []
+      },
+      "selection": {
+        "hover": {
+          "type": "single",
+          "fields": ["run.time_start"],
+          "nearest": true,
+          "on": "mouseover",
+          "empty": "none",
+          "clear": "mouseout"
+        }
+      }
+    }
+  ]
+}
