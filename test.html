@@ -5,15 +5,48 @@
   <script src="https://cdn.jsdelivr.net/npm/vega-lite@4.17.0"></script>
   <script src="https://cdn.jsdelivr.net/npm/vega-embed@6"></script>
 </head>
-<body onload="do_it();">
+<body onload="runUpdateCount(); do_it();">
 
 <div id="vis"></div>
 
+<br>
+
+<p style="color: gray;">Unfinished calculation count: <a style="color: black;" id="unfinished_count">?</div></p>
+
 <script type="text/javascript">
+  const baseUrl = 'http://34.117.135.4';
+  var limit = 10;
+  // grab limit from fragment
+  if(window.location.hash) { // does the URL contain a fragment?
+    const fragment = window.location.hash.substring(1); // remove leading '#'
+    const parsedLimit = parseInt(fragment);
+    if (!isNaN(parsedLimit)) {
+      limit = parsedLimit;
+      console.log("Limit: " + parsedLimit);
+    }
+  }
+  let dataUrl = baseUrl + '/liquidity/all?slippage=0.5&numeraire=USD&limit=' + limit;
+
   function uniq(a) {
       return a.sort().filter(function(item, pos, ary) {
           return !pos || item != ary[pos - 1];
       });
+  }
+
+  // source: https://stackoverflow.com/a/2901298/700597
+  function numberWithCommas(x) {
+      return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  }
+
+  async function runUpdateCount() {
+    let unfinishedCount = document.getElementById('unfinished_count');
+    async function updateCounter() {
+      const resp = await fetch(baseUrl + '/calc/unfinished/count');
+      const data = await resp.json();
+      unfinishedCount.innerHTML = numberWithCommas(data);
+    }
+    updateCounter();
+    return setInterval(updateCounter, 5000);
   }
 
   async function do_it() {
@@ -22,70 +55,70 @@
     const mkTooltipOptions = objList =>
       uniqueCurrencies(objList).map(x => ({"field": x, "type": "quantitative"}));
 
-    // (x => ({ "field": x.currency, "type": "quantitative" }));
-
-    // [
-      //   {"field": "AAPL", "type": "quantitative"},
-      //   {"field": "AMZN", "type": "quantitative"},
-      //   {"field": "GOOG", "type": "quantitative"},
-      //   {"field": "IBM", "type": "quantitative"},
-      //   {"field": "MSFT", "type": "quantitative"}
-      // ]
-
-    let url = 'data/test.json';
-    let response = await fetch(url);
+    let response = await fetch(dataUrl);
     let data = await response.json();
 
     const tooltipOptions = mkTooltipOptions(data);
-    console.log(tooltipOptions);
 
     var spec =
     {
       "$schema": "https://vega.github.io/schema/vega-lite/v4.json",
       "data": {
-        "url": "data/test.json",
+        "url": dataUrl,
       },
       "format": {
           "parse": {
             "run.time_start": "date",
             "qty": "number",
-            "currency": "string"
+            "currency": "string",
+            "run.id": "number"
           }
         },
-      "width": 400,
-      "height": 300,
+      "width": 600,
+      "height": 450,
+      "transform": [
+        {"filter": "datum.qty > 1000"},
+        {"calculate": "1e-6 * datum.qty", "as": "qty_mm"},
+      ],
       "encoding": {
         "x": {
           "field": "run.time_start",
-          "type": "temporal"
+          "type": "temporal",
+          "title": "Time"
         },
+        "tooltip": [
+          {"field": "currency", "title": "Currency", "type": "nominal"},
+          {"field": "qty_mm", "title": "Quantity (MM USD)", "type": "quantitative"},
+          {"field": "run.time_start", "title": "Time", "type": "temporal"},
+          {"field": "run.id", "title": "Run ID", "type": "nominal"}
+        ]
       },
       "layer": [
         {
           "encoding": {
-            "color": {"field": "currency", "type": "nominal"},
-            "y": {"field": "qty", "type": "quantitative"}
+            "color": {"field": "currency", "type": "nominal", "title": "Currency"},
+            "y": {
+              "field": "qty_mm",
+              "type": "quantitative",
+              "title": "Quantity (MM USD)",
+              "scale": {"type": "log"},
+            }
           },
           "layer": [
             {"mark": "line"},
+            {"mark": "point"},
             {"transform": [{"filter": {"selection": "hover"}}], "mark": "point"}
           ]
         },
         {
-          "transform": [{"pivot": "currency", "value": "qty", "groupby": ["run.time_start"]}],
+          "transform": [{"pivot": "currency", "value": "qty_mm", "groupby": ["run.time_start"]}],
           "mark": "rule",
           "encoding": {
             "opacity": {
               "condition": {"value": 0.3, "selection": "hover"},
               "value": 0
             },
-            "tooltip": [
-              {"field": "BTC", "type": "quantitative"},
-              {"field": "ETH", "type": "quantitative"},
-              {"field": "XRP", "type": "quantitative"},
-              {"field": "ADA", "type": "quantitative"},
-              {"field": "AAVE", "type": "quantitative"}
-            ]
+            "tooltip": tooltipOptions
           },
           "selection": {
             "hover": {
@@ -102,7 +135,6 @@
     }
 
     vegaEmbed('#vis', spec).then(function(result) {
-      console.log(result);
       // Access the Vega view instance (https://vega.github.io/vega/docs/api/view/) as result.view
     }).catch(console.error);
   }
