@@ -50,16 +50,6 @@
   }
 
   async function do_it() {
-    const uniqueCurrencies = objList =>
-      uniq( objList.map(x => x.currency) );
-    const mkTooltipOptions = objList =>
-      uniqueCurrencies(objList).map(x => ({"field": x, "type": "quantitative"}));
-
-    let response = await fetch(dataUrl);
-    let data = await response.json();
-
-    const tooltipOptions = mkTooltipOptions(data);
-
     var spec =
     {
       "$schema": "https://vega.github.io/schema/vega-lite/v4.json",
@@ -117,8 +107,7 @@
             "opacity": {
               "condition": {"value": 0.3, "selection": "hover"},
               "value": 0
-            },
-            "tooltip": tooltipOptions
+            }
           },
           "selection": {
             "hover": {
