@@ -1,5 +1,5 @@
-// 'cryptomarketdepth.com'
-const baseUrl = 'http://' + '35.221.4.161' + '/api/v1';
+const host = 'cryptomarketdepth.com';
+const baseUrl = 'http://' + host + '/api/v1';
 const detailsElem = document.getElementById('details');
 
 class Config {
@@ -154,35 +154,20 @@ async function runUpdateCount() {
 async function do_it() {
   var spec =
   {
-    "$schema": "https://vega.github.io/schema/vega/v4.json",
-    "width": 700,
-    "height": 450,
-    "padding": {"left": 5, "right": 5, "top": 0, "bottom": 20},
-    "autosize": "none",
-    "signals": [
-      {	"name": "signal_exponent_y_axis",
-        "value": 1.0,
-        "bind": {
-              "input": "range",
-              "name": "Y-axis scale",
-              "min": 0.5,
-              "max": 1.0,
-              "step": 0.5
-            }
-      }
-    ],
+    "$schema": "https://vega.github.io/schema/vega-lite/v4.json",
     "data": {
       "url": mkDataUrl(urlParams),
-      "name": "my_data"
     },
     "format": {
         "parse": {
-          "run.time_start": "date",
+          "run.time_start": "time",
           "qty": "number",
           "currency": "string",
           "run_id": "number"
         }
       },
+    "width": 700,
+    "height": 450,
     "transform": [
       {"filter": "datum.currency != \"TSD\""},
       {"filter": "datum.currency != \"UST\""},
@@ -208,108 +193,47 @@ async function do_it() {
       ],
       "href": {"field": "url"}
     },
-
-    "scales": [
+    "layer": [
       {
-        "name": "scale_x_axis",
-        "type": "point",
-        "range": "width",
-        "domain": {"data": "my_data", "field": "run.time_start"}
-      },
-      {
-        "name": "scale_y_axis",
-        "type": "pow",
-        "exponent": {"signal": "signal_exponent_y_axis" },
-        "domain": {	"data": "my_data", "field": "qty_mm"},
-        "range": "height",
-
-        "nice": true
-      },
-      {
-        "name": "color",
-        "type": "ordinal",
-        "range": "category",
-        "domain": {"data": "my_data", "field": "currency"}
-      }
-    ],
-
-    "axes": [
-      {"orient": "bottom", "scale": "scale_x_axis"},
-      {"orient": "left", "scale": "scale_y_axis", "grid":true}
-    ],
-
-    "marks": [
-      {
-        "type": "group",
-        "from": {
-          "facet": {
-            "name": "series",
-            "data": "my_data",
-            "groupby": "run.time_start"
+        "encoding": {
+          "color": {"field": "currency", "type": "nominal", "title": "Currency (Y)"},
+          "y": {
+            "field": "qty_mm",
+            "type": "quantitative",
+            "title": "Quantity (MM USD)",
+            "scale": {"type": "log"},
           }
         },
-        "marks": [
-          {
-            "type": "line",
-            "from": {"data": "series"},
-            "encode": {
-              "update": {
-                "x": {"scale": "scale_x_axis", "field": "run.time_start"},
-                "y": {"scale": "scale_y_axis", "field": "qty_mm"},
-                "stroke": {"scale": "color", "field": "c"},
-                "strokeWidth": {"value": 2},
-                "fillOpacity": {"value": 1}
-              },
-              "hover": {
-                "fillOpacity": {"value": 0.5}
-              }
-            }
+        "layer": [
+          {"mark": "line"},
+          // {"mark": "point"},
+          {"transform":
+            [{"filter": {"selection": "hover"}}],
+            "mark": "line"
           }
         ]
+      },
+      {
+        "transform": [{"pivot": "currency", "value": "qty_mm", "groupby": ["run.time_start"]}],
+        "mark": "rule",
+        "encoding": {
+          "opacity": {
+            "condition": {"value": 0.3, "selection": "hover"},
+            "value": 0
+          }
+        },
+        "selection": {
+          "hover": {
+            "type": "single",
+            "fields": ["run.time_start"],
+            "nearest": true,
+            "on": "mouseover",
+            "empty": "none",
+            "clear": "mouseout"
+          }
+        }
       }
     ]
-
-    // "layer": [
-    //   {
-    //     "encoding": {
-    //       "color": {"field": "currency", "type": "nominal", "title": "Currency"},
-    //       "y": {
-    //         "field": "qty_mm",
-    //         "type": "quantitative",
-    //         "title": "Quantity (MM USD)",
-    //         "scale": {"type": {"signal": "log_scale"}},
-    //       }
-    //     },
-    //     "layer": [
-    //       {"mark": "line"},
-    //       {"mark": "point"},
-    //       {"transform":
-    //         [{"filter": {"selection": "hover"}}],
-    //         "mark": "line"
-    //       }
-    //     ]
-    //   },
-    //   {
-    //     "transform": [{"pivot": "currency", "value": "qty_mm", "groupby": ["run.time_start"]}],
-    //     "mark": "rule",
-    //     "encoding": {
-    //       "opacity": {
-    //         "condition": {"value": 0.3, "selection": "hover"},
-    //         "value": 0
-    //       }
-    //     },
-    //     "selection": {
-    //       "hover": {
-    //         "type": "single",
-    //         "fields": ["run.time_start"],
-    //         "nearest": true,
-    //         "on": "mouseover",
-    //         "empty": "none",
-    //         "clear": "mouseout"
-    //       }
-    //     }
-    //   }
-    // ]
   }
 
   vegaEmbed('#vis', spec).then(function(result) {
