@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <link rel="stylesheet" href="css/bare.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/vega@5.17.1"></script>
+  <!-- <script src="https://cdn.jsdelivr.net/npm/vega-lite@4.17.0"></script> -->
+  <script src="https://cdn.jsdelivr.net/npm/vega-embed@6"></script>
+</head>
+
+<body onload="runUpdateCount(); do_it();">
+<center>
+  <h1>Cryptocurrency liquidity</h1>
+  <h2>Evolution over time</h2>
+
+  <div style="width: 100%;" id="vis"></div>
+
+  <br>
+  <br>
+  <h2>Buy/sell paths</h2>
+  <div id="details">
+    <p style="color: gray;"><i>Click chart point to load details</i></p>
+  </div>
+
+  <br>
+  <br>
+  <h2>Unfinished calculations</h2>
+  <p>Count: <span id="unfinished_count" style="display:inline;">?</span></p>
+
+</center>
+</body>
+<script src="index.js"></script>
+</html>
