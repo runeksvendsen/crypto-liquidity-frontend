@@ -5,27 +5,64 @@
   <script src="https://cdn.jsdelivr.net/npm/vega@5.17.1"></script>
   <script src="https://cdn.jsdelivr.net/npm/vega-lite@4.17.0"></script>
   <script src="https://cdn.jsdelivr.net/npm/vega-embed@6"></script>
+  <style>
+    p {
+      max-width: 850px;
+      text-align: left;
+      padding-left: 15px;
+      padding-right: 15px;
+    }
+  </style>
 </head>
 
 <body onload="runUpdateCount(); do_it();">
 <center>
-  <h1>Cryptocurrency liquidity</h1>
-  <h2>Evolution over time</h2>
+  <div>
+    <h1>Cryptocurrency liquidity</h1>
+    <p>
+      This site measures the liquidity of cryptocurrencies. Liquidity is measured as the amount of
+      USD that can be exchanged for a given cryptocurrency while moving the price in any
+      market by at most 0.5%.
+    </p>
+    <h2>Overview</h2>
+    <p>
+      The graph below gives an overview of cryptocurrency liquidity as measured within the last 24 hours.<br>
+      <br>
+      In this chart, a round shape
+      denotes a cryptocurrency. The size of the shape is proportional to the liquidity of the given cryptocurrency.
+      Yellow squares denote national currencies (e.g. USD, EUR, JPY). A line between two currencies denotes a market.
+      For example, a line from BTC to USD denotes the BTC/USD market. The width of the line is proportional
+      to the liquidity of the given market.
+    </p>
+    <div style="padding: 0px;" id="graph"></div>
 
-  <div style="width: 100%;" id="vis"></div>
+    <h2>Evolution over time</h2>
+    <p>
+      Whereas the above graph show only present liquidity, the chart below shows the evolution of liquidity over time.<br>
+      <br>
+      Click on a point in the chart to show the buy and sell paths for the given measurement.
+    </p>
+    <div style="padding: 0px;" id="time_series"></div>
 
-  <br>
-  <br>
-  <h2>Buy/sell paths</h2>
-  <div id="details">
-    <p style="color: gray;"><i>Click chart point to load details</i></p>
+    <br>
+    <br>
+    <h2 id="buy_sell_paths">Buy/sell paths</h2>
+    <p style="color: gray;">
+      <i>Click chart point to load details</i>
+    </p>
+    <p>
+      The table below shows the various markets through which one can buy and sell <span id="path_crypto">a cryptocurrency</span>.
+    </p>
+    <p>
+      For example, the path <tt>BTC --bitfinex--> UST --bitfinex--> USD</tt> denotes selling BTC in exchange for UST
+      in the Bitfinex BTC/UST market, and then selling the acquired UST for USD in the Bitfinex UST/USD market.
+    </p>
+    <div id="details"></div>
+    <br>
+    <br>
+    <h2>Unfinished calculations</h2>
+    <p>Count: <span id="unfinished_count" style="display:inline;">?</span></p>
   </div>
-
-  <br>
-  <br>
-  <h2>Unfinished calculations</h2>
-  <p>Count: <span id="unfinished_count" style="display:inline;">?</span></p>
-
 </center>
 </body>
 <script src="index.js"></script>

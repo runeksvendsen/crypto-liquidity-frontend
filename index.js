@@ -1,12 +1,15 @@
 const host = 'cryptomarketdepth.com';
-const baseUrl = 'http://' + host + '/api/v1';
+const basePath = '/api/v1';
+// const baseUrl = 'http://' + host + basePath;
+const baseUrl = basePath;
 const detailsElem = document.getElementById('details');
+const buySellPathsElem = document.getElementById('buy_sell_paths');
 
 class Config {
   numeraire = 'USD';
   slippage = 0.5;
   crypto = 'all';
-  limit = 18;
+  limit = 10;
   toDate = null;
   fromDate = null;
   detailRunId = null;
@@ -30,9 +33,7 @@ class Config {
   }
 
   pathsNumeraireSlippage() {
-    const pathBaseUrl = 'liquidity/test_paths/';
-    const params = new URLSearchParams({ "numeraire" : this.numeraire, "slippage" : this.slippage, "run_id": "_run_id_"});
-    return `${pathBaseUrl}%s?${params.toString()}`;
+    return `run/_run_id_/paths/${this.numeraire}/${this.slippage}/%s`;
   }
 }
 
@@ -49,21 +50,31 @@ async function locationHashChanged() {
       const detailsJson = await resp.json();
       // TODO: update "detailsElem" with "urlParams"
       detailsElem.innerHTML = mkDetailsTable(parseDetailsJson(detailsJson));
-      detailsElem.scrollIntoView();
+      buySellPathsElem.scrollIntoView();
+    } else {
+      do_it();
     }
 }
 window.onhashchange = locationHashChanged;
 
 function parseDetailsJson(detailsJson) {
-  const content = detailsJson[0];
-  const run = content[0];
-  const data = content[1][0];
+  const run = detailsJson[0];
+  const data = detailsJson[1][0];
   const calcInfo = data[0];
   const pathList = data[1];
+  let toPathDescr = (pathObj) =>
+      {
+        let pathStringList = Array.prototype.map.call(pathObj.currencys, function(currency, i) {
+          let venue = pathObj.venues[i];
+          return " --" + venue + "--> " + currency
+          }
+        );
+        return pathObj.start + pathStringList.join("");
+      }
   let qtyPath = (pathListElem) =>
       { let qty = pathListElem[0].qty;
         let pathDescr = pathListElem[1];
-        return [qty, pathDescr]
+        return [qty, toPathDescr(pathDescr)]
       }
   return [[calcInfo.currency, calcInfo.numeraire, run.id], pathList.map(qtyPath)];
 }
@@ -101,15 +112,12 @@ function mkDetailsTable (pathInfo) {
     </table>`;
 }
 
-const urlParams = Config.fromWindowHash();
-
 let mkDataUrl = urlParams => baseUrl
       + '/liquidity/' + urlParams.crypto
-      + '?slippage=0.5&numeraire=USD'
+      + `?slippage=${urlParams.slippage}&numeraire=${urlParams.numeraire}`
       + '&limit=' + urlParams.limit
       + (urlParams.fromDate ? '&from=' + urlParams.fromDate : '')
       + (urlParams.toDate ? "&to=" + urlParams.toDate : '');
-let numeraireSlippage = `slippage=${urlParams.slippage}&numeraire=${urlParams.numeraire}`;
 
 function uniq(a) {
     return a.sort().filter(function(item, pos, ary) {
@@ -152,6 +160,19 @@ async function runUpdateCount() {
 }
 
 async function do_it() {
+  const urlParams = Config.fromWindowHash();
+  createGraph(urlParams);
+  createTimeSeries(urlParams);
+}
+
+async function createGraph(urlParams) {
+  return vegaEmbed('#graph', mkGraphSpec(urlParams)).then(function(result) {
+    // Access the Vega view instance (https://vega.github.io/vega/docs/api/view/) as result.view
+  }).catch(console.error);
+}
+
+async function createTimeSeries(urlParams) {
+  const yAxisLabel = `MM ${urlParams.numeraire} @ ${urlParams.slippage}% slippage`;
   var spec =
   {
     "$schema": "https://vega.github.io/schema/vega-lite/v4.json",
@@ -169,12 +190,13 @@ async function do_it() {
     "width": 700,
     "height": 450,
     "transform": [
-      {"filter": "datum.currency != \"TSD\""},
-      {"filter": "datum.currency != \"UST\""},
-      {"filter": "datum.currency != \"USDC\""},
-      {"filter": "datum.currency != \"USDT\""},
-      {"filter": "datum.currency != \"TUSD\""},
-      {"filter": "datum.currency != \"BTCB\""},
+      {"filter": "datum.qty != 0"},
+      // {"filter": "datum.currency != \"TSD\""},
+      // {"filter": "datum.currency != \"UST\""},
+      // {"filter": "datum.currency != \"USDC\""},
+      // {"filter": "datum.currency != \"USDT\""},
+      // {"filter": "datum.currency != \"TUSD\""},
+      // {"filter": "datum.currency != \"BTCB\""},
       {"filter": "datum.run_id != 1"},
       {"calculate": "1e-6 * datum.qty", "as": "qty_mm"},
       {"calculate": `'#d:' + replace(replace("${urlParams.pathsNumeraireSlippage()}", "%s", datum.currency), "_run_id_", datum.run_id)`, "as": "url"}
@@ -187,7 +209,10 @@ async function do_it() {
       },
       "tooltip": [
         {"field": "currency", "title": "Currency", "type": "nominal"},
-        {"field": "qty_mm", "title": "Quantity (MM USD)", "type": "quantitative"},
+        { "field": "qty_mm",
+          "title": yAxisLabel,
+          "type": "quantitative"
+        },
         {"field": "run.time_start", "title": "Time", "type": "temporal"},
         {"field": "run_id", "title": "Run ID", "type": "nominal"}
       ],
@@ -196,17 +221,25 @@ async function do_it() {
     "layer": [
       {
         "encoding": {
-          "color": {"field": "currency", "type": "nominal", "title": "Currency (Y)"},
+          "color": {
+            "field": "currency",
+            "type": "nominal",
+            "title": "Currency"
+          },
           "y": {
             "field": "qty_mm",
             "type": "quantitative",
-            "title": "Quantity (MM USD)",
+            "title": yAxisLabel,
             "scale": {"type": "log"},
           }
         },
         "layer": [
           {"mark": "line"},
-          // {"mark": "point"},
+          {"mark": {
+            "type": "point",
+            "strokeWidth": 0
+            }
+          },
           {"transform":
             [{"filter": {"selection": "hover"}}],
             "mark": "line"
@@ -236,7 +269,229 @@ async function do_it() {
     ]
   }
 
-  vegaEmbed('#vis', spec).then(function(result) {
+  return vegaEmbed('#time_series', spec).then(function(result) {
     // Access the Vega view instance (https://vega.github.io/vega/docs/api/view/) as result.view
   }).catch(console.error);
+}
+
+function mkGraphSpec(urlParams) {
+  var dataUrl = `${baseUrl}/run/newest/paths/${urlParams.numeraire}/${urlParams.slippage}/all?limit=100`;
+  var json = {
+    "$schema": "https://vega.github.io/schema/vega/v5.json",
+    "description": "TODO",
+    "width": 500,
+    "height": 500,
+    "padding": 0,
+    "autosize": "none",
+    "data": [
+      {
+        "name": "node-data",
+        "url": dataUrl,
+        "format": {"type": "json", "property": "nodes"},
+        "transform": [
+          {
+            "type": "formula",
+            "as": "shape",
+            "expr": "datum.is_crypto ? 'circle' : 'square'"
+          },
+          {
+            "type": "formula",
+            "expr": `datum.name + ': ' + format(1e-6 * datum.qty, ',.4r') + 'm ${urlParams.numeraire}'`,
+            "as": "node_tooltip_raw"
+          },
+          {
+            "type": "formula",
+            "expr": "datum.is_crypto ? datum.node_tooltip_raw : ''",
+            "as": "node_tooltip"
+          },
+          {"type": "formula", "expr": "log(datum.qty)", "as": "qty_log"},
+          {"type": "extent", "field": "qty_log", "signal": "qty_extent"},
+          {
+            "type": "formula",
+            "expr": "(datum.qty_log - qty_extent[0] + 1) * nodeSize",
+            "as": "node_radius_raw"
+          },
+          {
+            "type": "formula",
+            "expr": "datum.is_crypto ? datum.node_radius_raw : qty_extent[1] / 2",
+            "as": "node_radius"
+          },
+          {
+            "type": "formula",
+            "expr": "datum.is_crypto ? scale('color', datum.name) : 'yellow'",
+            "as": "node_color"
+          },
+          {
+            "type": "formula",
+            "expr": "datum.is_crypto ? 1 : 0.5",
+            "as": "node_opacity"
+          }
+        ]
+      },
+      {
+        "name": "link-data",
+        "url": dataUrl,
+        "format": {"type": "json", "property": "links"}
+      }
+    ],
+    "signals": [
+      {"name": "cx", "update": "width / 2"},
+      {"name": "cy", "update": "height / 2"},
+      {
+        "name": "nodeSize",
+        "value": 2,
+        // "bind": {"input": "range", "min": 1, "max": 3, "step": 0.1}
+      },
+      {
+        "name": "nodeCharge",
+        "value": -130,
+        // "bind": {"input": "range", "min": -200, "max": 10, "step": 1}
+      },
+      {
+        "name": "linkWidth",
+        "value": 6,
+        // "bind": {"input": "range", "min": 1, "max": 10, "step": 1}
+      },
+      {
+        "name": "linkLength",
+        "value": 80,
+        // "bind": {"input": "range", "min": 5, "max": 100, "step": 1}
+      },
+      {"name": "static", "value": false, "bind": {"input": "checkbox"}},
+      {
+        "description": "State variable for active node fix status.",
+        "name": "fix",
+        "value": false,
+        "on": [
+          {
+            "events": "symbol:mouseout[!event.buttons], window:mouseup",
+            "update": "false"
+          },
+          {"events": "symbol:mouseover", "update": "fix || true"},
+          {
+            "events": "[symbol:mousedown, window:mouseup] > window:mousemove!",
+            "update": "xy()",
+            "force": true
+          }
+        ]
+      },
+      {
+        "description": "Graph node most recently interacted with.",
+        "name": "node",
+        "value": null,
+        "on": [
+          {"events": "symbol:mouseover", "update": "fix === true ? item() : node"}
+        ]
+      },
+      {
+        "description": "Flag to restart Force simulation upon data changes.",
+        "name": "restart",
+        "value": false,
+        "on": [{"events": {"signal": "fix"}, "update": "fix && fix.length"}]
+      }
+    ],
+    "scales": [
+      {"name": "color", "type": "ordinal", "range": {"scheme": "category20c"}},
+      {
+        "name": "edge_size",
+        "type": "pow",
+        "exponent": 0.3,
+        "domain": {"data": "link-data", "field": "size"},
+        "range": [1, {"signal": "linkWidth"}]
+      }
+    ],
+    "marks": [
+      {
+        "name": "nodes",
+        "type": "symbol",
+        "zindex": 2,
+        "from": {"data": "node-data"},
+        "on": [
+          {
+            "trigger": "fix",
+            "modify": "node",
+            "values": "fix === true ? {fx: node.x, fy: node.y} : {fx: fix[0], fy: fix[1]}"
+          },
+          {"trigger": "!fix", "modify": "node", "values": "{fx: null, fy: null}"}
+        ],
+        "encode": {
+          "enter": {
+            "fill": {"field": "node_color"},
+            "fillOpacity": {"field": "node_opacity"},
+            "stroke": {"value": "white"}
+          },
+          "update": {
+            "tooltip": {"field": "node_tooltip"},
+            "size": {"signal": "datum.node_radius * datum.node_radius * 4"},
+            "shape": {"field": "shape"},
+            "cursor": {"value": "pointer"}
+          }
+        },
+        "transform": [
+          {
+            "type": "force",
+            "iterations": 300,
+            "restart": {"signal": "restart"},
+            "static": {"signal": "static"},
+            "signal": "force",
+            "forces": [
+              {"force": "center", "x": {"signal": "cx"}, "y": {"signal": "cy"}},
+              {"force": "collide", "radius": 14},
+              {"force": "nbody", "strength": {"signal": "nodeCharge"}},
+              {
+                "force": "link",
+                "links": "link-data",
+                "distance": {"signal": "linkLength"}
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "text",
+        "zindex": 1,
+        "from": {"data": "nodes"},
+        "interactive": false,
+        "enter": {"fill": {"value": "black"}, "fontSize": {"value": 10}},
+        "encode": {
+          "update": {
+            "y": {
+              "field": "y",
+              "offset": {"signal": "datum.datum.node_radius * -1.1"}
+            },
+            "x": {"field": "x"},
+            "text": {"field": "datum.name"},
+            "align": {"value": "center"}
+          }
+        }
+      },
+      {
+        "type": "path",
+        "zindex": 0,
+        "from": {"data": "link-data"},
+        "interactive": false,
+        "encode": {
+          "enter": {"tooltip": [{"value": "1234"}]},
+          "update": {
+            "stroke": {"value": "#ccc"},
+            "strokeWidth": {"scale": "edge_size", "field": "size"},
+            "strokeOpacity": {"value": 0.5}
+          },
+          "hover": {"opacity": {"value": 1}}
+        },
+        "transform": [
+          {
+            "type": "linkpath",
+            "require": {"signal": "force"},
+            "shape": "line",
+            "sourceX": "datum.source.x",
+            "sourceY": "datum.source.y",
+            "targetX": "datum.target.x",
+            "targetY": "datum.target.y"
+          }
+        ]
+      }
+    ]
+  };
+  return json;
 }
