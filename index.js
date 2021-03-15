@@ -1,7 +1,7 @@
 const host = 'cryptomarketdepth.com';
 const basePath = '/api/v1';
-// const baseUrl = 'http://' + host + basePath;
-const baseUrl = basePath;
+const baseUrl = 'http://' + host + basePath;
+// const baseUrl = basePath;
 const detailsElem = document.getElementById('details');
 const buySellPathsElem = document.getElementById('buy_sell_paths');
 
@@ -279,7 +279,7 @@ function mkGraphSpec(urlParams) {
   var json = {
     "$schema": "https://vega.github.io/schema/vega/v5.json",
     "description": "TODO",
-    "width": 500,
+    "width": 600,
     "height": 500,
     "padding": 0,
     "autosize": "none",
@@ -331,31 +331,36 @@ function mkGraphSpec(urlParams) {
       {
         "name": "link-data",
         "url": dataUrl,
-        "format": {"type": "json", "property": "links"}
+        "format": {"type": "json", "property": "links"},
+        "transform": [
+          {
+            "type": "filter",
+            "expr": "symbol_hover && (symbol_hover.index == datum.source || symbol_hover.index == datum.target)"
+          }
+        ]
       }
     ],
     "signals": [
       {"name": "cx", "update": "width / 2"},
       {"name": "cy", "update": "height / 2"},
+      // if the graph fits within a 500px box, how much should we multiply pixels sizes by
+      //  if the box becomes "n" pixels instead?
+      {"name": "size_factor", "update": "width / 500"},
       {
         "name": "nodeSize",
         "value": 2,
-        // "bind": {"input": "range", "min": 1, "max": 3, "step": 0.1}
       },
       {
         "name": "nodeCharge",
-        "value": -130,
-        // "bind": {"input": "range", "min": -200, "max": 10, "step": 1}
+        "update": -130
       },
       {
         "name": "linkWidth",
-        "value": 6,
-        // "bind": {"input": "range", "min": 1, "max": 10, "step": 1}
+        "uodate": 6
       },
       {
         "name": "linkLength",
-        "value": 80,
-        // "bind": {"input": "range", "min": 5, "max": 100, "step": 1}
+        "update": 80
       },
       {"name": "static", "value": false, "bind": {"input": "checkbox"}},
       {
@@ -367,7 +372,10 @@ function mkGraphSpec(urlParams) {
             "events": "symbol:mouseout[!event.buttons], window:mouseup",
             "update": "false"
           },
-          {"events": "symbol:mouseover", "update": "fix || true"},
+          {
+            "events": "symbol:mouseover",
+            "update": "fix || true"
+          },
           {
             "events": "[symbol:mousedown, window:mouseup] > window:mousemove!",
             "update": "xy()",
@@ -388,7 +396,15 @@ function mkGraphSpec(urlParams) {
         "name": "restart",
         "value": false,
         "on": [{"events": {"signal": "fix"}, "update": "fix && fix.length"}]
-      }
+      },
+      {
+        "name": "symbol_hover",
+        "value": null,
+        "on": [
+          {"events": "symbol:mouseover", "update": "datum"},
+          {"events": "symbol:mouseout", "update": "null"}
+        ]
+      },
     ],
     "scales": [
       {"name": "color", "type": "ordinal", "range": {"scheme": "category20c"}},
@@ -397,7 +413,7 @@ function mkGraphSpec(urlParams) {
         "type": "pow",
         "exponent": 0.3,
         "domain": {"data": "link-data", "field": "size"},
-        "range": [1, {"signal": "linkWidth"}]
+        "range": [{"signal": "size_factor"}, {"signal": "linkWidth"}]
       }
     ],
     "marks": [
@@ -471,13 +487,13 @@ function mkGraphSpec(urlParams) {
         "from": {"data": "link-data"},
         "interactive": false,
         "encode": {
-          "enter": {"tooltip": [{"value": "1234"}]},
           "update": {
             "stroke": {"value": "#ccc"},
             "strokeWidth": {"scale": "edge_size", "field": "size"},
-            "strokeOpacity": {"value": 0.5}
+            "strokeOpacity": {"value": 0.5},
+            "tooltip": [{"value": "1234"}]
           },
-          "hover": {"opacity": {"value": 1}}
+          "hover": {"strokeOpacity": {"value": 1}}
         },
         "transform": [
           {
