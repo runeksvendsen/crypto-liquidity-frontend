@@ -1,7 +1,13 @@
 const host = 'cryptomarketdepth.com';
 const basePath = '/api/v1';
-const baseUrl = 'http://' + host + basePath;
-// const baseUrl = basePath;
+
+var baseUrl;
+if (window.location.protocol === 'file:') {
+  baseUrl = 'http://' + host + basePath;
+} else {
+  baseUrl = basePath;
+}
+
 const detailsElem = document.getElementById('details');
 const buySellPathsElem = document.getElementById('buy_sell_paths');
 
@@ -275,12 +281,12 @@ async function createTimeSeries(urlParams) {
 }
 
 function mkGraphSpec(urlParams) {
-  var dataUrl = `${baseUrl}/run/newest/paths/${urlParams.numeraire}/${urlParams.slippage}/all?limit=100`;
+  var dataUrl = `${baseUrl}/run/newest/paths/${urlParams.numeraire}/${urlParams.slippage}/all?limit=200`;
   var json = {
     "$schema": "https://vega.github.io/schema/vega/v5.json",
     "description": "TODO",
-    "width": 600,
-    "height": 500,
+    "width": 850,
+    "height": 700,
     "padding": 0,
     "autosize": "none",
     "data": [
@@ -331,13 +337,7 @@ function mkGraphSpec(urlParams) {
       {
         "name": "link-data",
         "url": dataUrl,
-        "format": {"type": "json", "property": "links"},
-        "transform": [
-          {
-            "type": "filter",
-            "expr": "symbol_hover && (symbol_hover.index == datum.source || symbol_hover.index == datum.target)"
-          }
-        ]
+        "format": {"type": "json", "property": "links"}
       }
     ],
     "signals": [
@@ -352,15 +352,15 @@ function mkGraphSpec(urlParams) {
       },
       {
         "name": "nodeCharge",
-        "update": -130
+        "value": -130
       },
       {
         "name": "linkWidth",
-        "uodate": 6
+        "value": 7
       },
       {
         "name": "linkLength",
-        "update": 80
+        "value": 80
       },
       {"name": "static", "value": false, "bind": {"input": "checkbox"}},
       {
@@ -398,13 +398,13 @@ function mkGraphSpec(urlParams) {
         "on": [{"events": {"signal": "fix"}, "update": "fix && fix.length"}]
       },
       {
-        "name": "symbol_hover",
+        "name": "symbol_hover_index",
         "value": null,
         "on": [
-          {"events": "symbol:mouseover", "update": "datum"},
+          {"events": "symbol:mouseover", "update": "datum.index"},
           {"events": "symbol:mouseout", "update": "null"}
         ]
-      },
+      }
     ],
     "scales": [
       {"name": "color", "type": "ordinal", "range": {"scheme": "category20c"}},
@@ -413,14 +413,14 @@ function mkGraphSpec(urlParams) {
         "type": "pow",
         "exponent": 0.3,
         "domain": {"data": "link-data", "field": "size"},
-        "range": [{"signal": "size_factor"}, {"signal": "linkWidth"}]
+        "range": [1, {"signal": "linkWidth"}]
       }
     ],
     "marks": [
       {
         "name": "nodes",
         "type": "symbol",
-        "zindex": 2,
+        "zindex": 1,
         "from": {"data": "node-data"},
         "on": [
           {
@@ -465,12 +465,16 @@ function mkGraphSpec(urlParams) {
       },
       {
         "type": "text",
-        "zindex": 1,
+        "zindex": 2,
         "from": {"data": "nodes"},
         "interactive": false,
-        "enter": {"fill": {"value": "black"}, "fontSize": {"value": 10}},
         "encode": {
+          "enter": {
+            "fill": {"value": "blue"}
+          },
           "update": {
+            "fontSize": {"value": 10},
+            "fontWeight": {"signal": "symbol_hover_index && symbol_hover_index === datum.datum.index ? 'bold' : 'normal'"},
             "y": {
               "field": "y",
               "offset": {"signal": "datum.datum.node_radius * -1.1"}
@@ -488,12 +492,15 @@ function mkGraphSpec(urlParams) {
         "interactive": false,
         "encode": {
           "update": {
-            "stroke": {"value": "#ccc"},
+            "stroke": {
+              "signal": "symbol_hover_index && (symbol_hover_index === datum.source.datum.index || symbol_hover_index === datum.target.datum.index) ? 'red' : 'black'"
+            },
             "strokeWidth": {"scale": "edge_size", "field": "size"},
-            "strokeOpacity": {"value": 0.5},
-            "tooltip": [{"value": "1234"}]
-          },
-          "hover": {"strokeOpacity": {"value": 1}}
+            "strokeOpacity": {
+              "signal": "symbol_hover_index && (symbol_hover_index === datum.source.datum.index || symbol_hover_index === datum.target.datum.index) ? 0.40 : 0.1"
+            },
+            "strokeJoin": "round"
+          }
         },
         "transform": [
           {

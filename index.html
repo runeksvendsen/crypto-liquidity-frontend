@@ -1,16 +1,23 @@
 <!DOCTYPE html>
 <html>
 <head>
+  <title>Cryptocurrency liquidity</title>
+
   <link rel="stylesheet" href="css/bare.min.css">
   <script src="https://cdn.jsdelivr.net/npm/vega@5.17.1"></script>
   <script src="https://cdn.jsdelivr.net/npm/vega-lite@4.17.0"></script>
   <script src="https://cdn.jsdelivr.net/npm/vega-embed@6"></script>
+
   <style>
     p {
       max-width: 850px;
       text-align: left;
       padding-left: 15px;
       padding-right: 15px;
+    }
+
+    h2 {
+      padding-top: 40px;
     }
   </style>
 </head>
@@ -24,11 +31,10 @@
       USD that can be exchanged for a given cryptocurrency while moving the price in any
       market by at most 0.5%.
     </p>
-    <br>
-    <br>
     <h2>Overview</h2>
     <p>
-      The graph below gives an overview of cryptocurrency liquidity as measured within the last 24 hours.<br>
+      The chart below gives an overview of cryptocurrency liquidity as measured within the last 24 hours.
+      It includes the 200 most liquid cryptocurrencies.<br>
       <br>
       In this chart, a round shape
       denotes a cryptocurrency. The size of the shape is proportional to the liquidity of the given cryptocurrency.
@@ -36,10 +42,8 @@
       For example, a line from BTC to USD denotes the BTC/USD market. The width of the line is proportional
       to the liquidity of the given market.
     </p>
-    <div style="padding: 0px; width: 100%; height: 850px;" id="graph" ></div>
+    <div style="padding: 0px;" id="graph" ></div>
 
-    <br>
-    <br>
     <h2>Evolution over time</h2>
     <p>
       Whereas the above graph show only present liquidity, the chart below shows the evolution of liquidity over time.<br>
@@ -48,8 +52,6 @@
     </p>
     <div style="padding: 0px;" id="time_series"></div>
 
-    <br>
-    <br>
     <h2 id="buy_sell_paths">Buy/sell paths</h2>
     <p style="color: gray;">
       <i>Click chart point to load details</i>
@@ -62,10 +64,17 @@
       in the Bitfinex BTC/UST market, and then selling the acquired UST for USD in the Bitfinex UST/USD market.
     </p>
     <div id="details"></div>
-    <br>
-    <br>
+
     <h2>Unfinished calculations</h2>
     <p>Count: <span id="unfinished_count" style="display:inline;">?</span></p>
+
+    <h2>About</h2>
+    <p>This site was created by Rune K. Svendsen.<br><br>
+
+    If you have questions, comments or other feedback, feel free to contact me at <a href="mailto:rune@cryptomarketdepth.com">rune@cryptomarketdepth.com</a>.</p>
+
+    <br>
+    <br>
   </div>
 </center>
 </body>
