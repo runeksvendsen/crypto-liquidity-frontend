@@ -2,7 +2,7 @@ const basePath = '/api/v1';
 
 var baseUrl;
 if (window.location.protocol === 'file:') {
-  const host = 'cryptomarketdepth.com';
+  const host = 'localhost:8000'; // 'cryptomarketdepth.com';
   baseUrl = 'http://' + host + basePath;
 } else {
   baseUrl = basePath;
@@ -302,12 +302,17 @@ function mkGraphSpec(urlParams) {
           },
           {
             "type": "formula",
-            "expr": `datum.name + ': ' + format(1e-6 * datum.qty, ',.4r') + 'm ${urlParams.numeraire}'`,
-            "as": "node_tooltip_raw"
+            "expr": "format(1e-6 * datum.qty, ',.4r') + ' MM USD'",
+            "as": "node_tooltip_qty_raw"
           },
           {
             "type": "formula",
-            "expr": "datum.is_crypto ? datum.node_tooltip_raw : ''",
+            "expr": "datum.is_crypto ? datum.node_tooltip_qty_raw : '-'",
+            "as": "node_tooltip_qty"
+          },
+          {
+            "type": "formula",
+            "expr": "{'Currency': datum.name, 'Quantity': datum.node_tooltip_qty, 'Market count': datum.market_count, 'Exchanges': join(datum.node_venues, ', ')}",
             "as": "node_tooltip"
           },
           {"type": "formula", "expr": "log(datum.qty)", "as": "qty_log"},
@@ -363,6 +368,7 @@ function mkGraphSpec(urlParams) {
         "value": 80
       },
       {"name": "static", "value": false, "bind": {"input": "checkbox"}},
+      {"name": "tooltip", "value": true, "bind": {"input": "checkbox"}},
       {
         "description": "State variable for active node fix status.",
         "name": "fix",
@@ -401,7 +407,7 @@ function mkGraphSpec(urlParams) {
         "name": "symbol_hover_index",
         "value": null,
         "on": [
-          {"events": "symbol:mouseover", "update": "datum.index"},
+          {"events": "symbol:mouseover", "update": "datum.idx"},
           {"events": "symbol:mouseout", "update": "null"}
         ]
       }
@@ -437,7 +443,7 @@ function mkGraphSpec(urlParams) {
             "stroke": {"value": "white"}
           },
           "update": {
-            "tooltip": {"field": "node_tooltip"},
+            "tooltip": {"signal": "tooltip ? datum.node_tooltip : ''"},
             "size": {"signal": "datum.node_radius * datum.node_radius * 4"},
             "shape": {"field": "shape"},
             "cursor": {"value": "pointer"}
@@ -457,6 +463,7 @@ function mkGraphSpec(urlParams) {
               {
                 "force": "link",
                 "links": "link-data",
+                "id": "datum.idx",
                 "distance": {"signal": "linkLength"}
               }
             ]
@@ -474,7 +481,7 @@ function mkGraphSpec(urlParams) {
           },
           "update": {
             "fontSize": {"value": 10},
-            "fontWeight": {"signal": "symbol_hover_index && symbol_hover_index === datum.datum.index ? 'bold' : 'normal'"},
+            "fontWeight": {"signal": "symbol_hover_index && symbol_hover_index === datum.datum.idx ? 'bold' : 'normal'"},
             "y": {
               "field": "y",
               "offset": {"signal": "datum.datum.node_radius * -1.1"}
@@ -493,11 +500,11 @@ function mkGraphSpec(urlParams) {
         "encode": {
           "update": {
             "stroke": {
-              "signal": "symbol_hover_index && (symbol_hover_index === datum.source.datum.index || symbol_hover_index === datum.target.datum.index) ? 'red' : 'black'"
+              "signal": "symbol_hover_index && (symbol_hover_index === datum.source.datum.idx || symbol_hover_index === datum.target.datum.idx) ? 'red' : 'black'"
             },
             "strokeWidth": {"scale": "edge_size", "field": "size"},
             "strokeOpacity": {
-              "signal": "symbol_hover_index && (symbol_hover_index === datum.source.datum.index || symbol_hover_index === datum.target.datum.index) ? 0.40 : 0.1"
+              "signal": "symbol_hover_index && (symbol_hover_index === datum.source.datum.idx || symbol_hover_index === datum.target.datum.idx) ? 0.40 : 0.1"
             },
             "strokeJoin": "round"
           }

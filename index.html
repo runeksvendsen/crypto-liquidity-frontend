@@ -21,11 +21,17 @@
     }
 
     h2 {
-      padding-top: 40px;
+      padding-top: 30px;
     }
 
     input[type=checkbox]:not([class]) {
       opacity: 1;
+    }
+
+    div#graph {
+      padding: 0px;
+      /* border-width: thin;
+      border-style: solid; */
     }
 
   </style>
@@ -36,22 +42,27 @@
   <div>
     <h1>Cryptocurrency liquidity</h1>
     <p>
-      This site measures the liquidity of cryptocurrencies. Liquidity is measured as the amount of
+      This site measures the liquidity of cryptocurrencies.
+
+      The liquidity of an asset is a measure of how much its price moves in response to
+      buying/selling it. The less the price moves in reponse to buying/selling of a specific quantity,
+      the more liquid the asset.
+
+      This site measures liquidity as the amount of
       USD that can be exchanged for a given cryptocurrency while moving the price in any
       market by at most 0.5%.
     </p>
     <h2>Overview</h2>
     <p>
       The chart below gives an overview of cryptocurrency liquidity as measured within the last 24 hours.
-      It includes the 200 most liquid cryptocurrencies.<br>
-      <br>
+      It includes the 200 most liquid cryptocurrencies.
       In this chart, a round shape
       denotes a cryptocurrency. The size of the shape is proportional to the liquidity of the given cryptocurrency.
       Yellow squares denote national currencies (e.g. USD, EUR, JPY). A line between two currencies denotes a market.
       For example, a line from BTC to USD denotes the BTC/USD market. The width of the line is proportional
       to the liquidity of the given market.
     </p>
-    <div style="padding: 0px;" id="graph" ></div>
+    <div id="graph" ></div>
 
     <h2>Evolution over time</h2>
     <p>
