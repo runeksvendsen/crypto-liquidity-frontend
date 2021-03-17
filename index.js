@@ -1,8 +1,8 @@
-const host = 'cryptomarketdepth.com';
 const basePath = '/api/v1';
 
 var baseUrl;
 if (window.location.protocol === 'file:') {
+  const host = 'cryptomarketdepth.com';
   baseUrl = 'http://' + host + basePath;
 } else {
   baseUrl = basePath;
