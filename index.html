@@ -3,6 +3,8 @@
 <head>
   <title>Cryptocurrency liquidity</title>
 
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <link rel="stylesheet" href="css/bare.min.css">
   <script src="https://cdn.jsdelivr.net/npm/vega@5.17.1"></script>
   <script src="https://cdn.jsdelivr.net/npm/vega-lite@4.17.0"></script>
@@ -34,6 +36,10 @@
       border-style: solid; */
     }
 
+    canvas {
+      max-width: 100%;
+      height: auto !important;
+    }
   </style>
 </head>
 
@@ -45,7 +51,7 @@
       This site measures the liquidity of cryptocurrencies.
 
       The liquidity of an asset is a measure of how much its price moves in response to
-      buying/selling it. The less the price moves in reponse to buying/selling of a specific quantity,
+      buying/selling. The less the price moves in reponse to buying/selling of a specific quantity,
       the more liquid the asset.
 
       This site measures liquidity as the amount of
@@ -66,24 +72,27 @@
 
     <h2>Evolution over time</h2>
     <p>
-      Whereas the above graph show only present liquidity, the chart below shows the evolution of liquidity over time.<br>
+      Whereas the above graph show only present liquidity (for the top 200 most liquid cryptocurrencies),
+      the chart below shows the evolution of liquidity over time for the top 10 most liquid cryptocurrencies.<br>
       <br>
-      Click on a point in the chart to show the buy and sell paths for the given measurement.
+      Click on a point in the chart to show the buy and sell paths for the given cryptocurrency at the given time.
     </p>
     <div style="padding: 0px;" id="time_series"></div>
 
     <h2 id="buy_sell_paths">Buy/sell paths</h2>
-    <p style="color: gray;">
-      <i>Click chart point to load details</i>
-    </p>
     <p>
       The table below shows the various markets through which one can buy and sell <span id="path_crypto">a cryptocurrency</span>.
     </p>
     <p>
-      For example, the path <tt>BTC --bitfinex--> UST --bitfinex--> USD</tt> denotes selling BTC in exchange for UST
-      in the Bitfinex BTC/UST market, and then selling the acquired UST for USD in the Bitfinex UST/USD market.
+      For example, the path <tt>BTC --bitfinex--> ETH --bitstamp--> USD</tt> denotes exchanging BTC for ETH
+      in the Bitfinex ETH/BTC market, and exchanging the acquired ETH for USD in the Bitstamp ETH/USD market.
     </p>
-    <div id="details"></div>
+
+    <div id="details">
+      <p style="color: gray;">
+        <i>Click chart point to load details</i>
+      </p>
+    </div>
 
     <h2>Unfinished calculations</h2>
     <p>Count: <span id="unfinished_count" style="display:inline;">?</span></p>
