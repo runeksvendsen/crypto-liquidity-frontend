@@ -88,6 +88,38 @@
       in the Bitfinex ETH/BTC market, and exchanging the acquired ETH for USD in the Bitstamp ETH/USD market.
     </p>
 
+
+    <label for="currencies">Currency:</label>
+      <select id="currencies" name="currencies">
+        <option value="BTC">BTC</option>
+        <option value="ETH">ETH</option>
+        <option value="USDT">USDT</option>
+        <option value="UDC">UDC</option>
+      </select>
+
+    <label for="runs">Run:</label>
+      <select id="runs" name="runs">
+        <option value="2020-01-01">2020-01-01</option>
+        <option value="2020-01-02">2020-01-02</option>
+        <option value="2020-01-03">2020-01-03</option>
+        <option value="2020-01-04">2020-01-04</option>
+      </select>
+
+    <p>Slippage (percent):</p>
+      <div>
+        <input type="radio" id="slip05" name="slippage" value="0.5"
+               checked>
+        <label for="slip05">0.5</label>
+      </div>
+      <div>
+        <input type="radio" id="slip01" name="slippage" value="0.1">
+        <label for="slip01">0.1</label>
+      </div>
+      <div>
+        <input type="radio" id="slip001" name="slippage" value="0.01">
+        <label for="slip001">0.01</label>
+      </div>
+
     <div id="details">
       <p style="color: gray;">
         <i>Click chart point to load details</i>
