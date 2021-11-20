@@ -2,14 +2,36 @@ const basePath = '/api/v1';
 
 var baseUrl;
 if (window.location.protocol === 'file:') {
-  const host = 'localhost:8000'; // 'cryptomarketdepth.com';
+  const host = 'cryptomarketdepth.com'; // 'localhost:8000';
   baseUrl = 'http://' + host + basePath;
 } else {
   baseUrl = basePath;
 }
 
+vega.expressionFunction('financial', function(number, params) {
+  var fraction;
+  var suffix;
+
+  if (number >= 1e9) {
+    fraction = number / 1e9;
+    suffix = "bn";
+  } else if (number >= 1e6) {
+    fraction = number / 1e6;
+    suffix = "m";
+  } else if (number >= 1e3) {
+    fraction = number / 1e3;
+    suffix = "k";
+  } else {
+    fraction = number;
+    suffix = "";
+  }
+
+  return fraction.toPrecision(parseInt(params)) + " " + suffix;
+});
+
 const detailsElem = document.getElementById('details');
 const buySellPathsElem = document.getElementById('buy_sell_paths');
+const chartBackgroundColor = "#f2f2f2";
 
 class Config {
   numeraire = 'USD';
@@ -63,6 +85,20 @@ async function locationHashChanged() {
 }
 window.onhashchange = locationHashChanged;
 
+class PathInfo {
+  quantity;
+  pathDescr;
+  priceLow;
+  priceHigh
+
+  constructor(quantity, pathDescr, priceLow, priceHigh) {
+    this.quantity = quantity;
+    this.pathDescr = pathDescr;
+    this.priceLow = priceLow;
+    this.priceHigh = priceHigh;
+  }
+}
+
 function parseDetailsJson(detailsJson) {
   const run = detailsJson[0];
   const data = detailsJson[1][0];
@@ -78,32 +114,36 @@ function parseDetailsJson(detailsJson) {
         return pathObj.start + pathStringList.join("");
       }
   let qtyPath = (pathListElem) =>
-      { let qty = pathListElem[0].qty;
+      { let pi = pathListElem[0];
         let pathDescr = pathListElem[1];
-        return [qty, toPathDescr(pathDescr)]
+        return new PathInfo(pi.qty, toPathDescr(pathDescr), pi.price_low, pi.price_high);
       }
-  return [[calcInfo.currency, calcInfo.numeraire, run.id], pathList.map(qtyPath)];
+  return [[calcInfo.currency, calcInfo.numeraire, run.time_start], pathList.map(qtyPath)];
 }
 
 function mkDetailsTable (pathInfo) {
   const currency = pathInfo[0][0];
   const numeraire = pathInfo[0][1];
-  const runId = pathInfo[0][2];
+  const timeStart = pathInfo[0][2].replace("T", " ").replace("Z", "");
   const pathList = pathInfo[1];
-  const qtySum = pathList.reduce((sum, x) => sum + x[0], 0);
+  const qtySum = pathList.reduce((sum, x) => sum + x.quantity, 0);
   const tableRows =
     pathList.map(qtyPath =>
         `<tr>
-          <td>${numberWithCommas(qtyPath[0])}</td>
-          <td>${qtyPath[1]}</td>
+          <td>${numberWithCommas(qtyPath.quantity)}</td>
+          <td>${qtyPath.pathDescr}</td>
+          <td>${numberWithCommas(qtyPath.priceLow.toPrecision(6))}</td>
+          <td>${numberWithCommas(qtyPath.priceHigh.toPrecision(6))}</td>
         </tr>`
       ).join("\n");
   return `<table>
-      <caption>Table: amount per path for ${currency} (run ${runId})</caption>
+      <caption>Table: amount per path for ${currency} (${timeStart} UTC)</caption>
       <thead>
         <tr>
           <th>Amount (${numeraire})</th>
           <th>Path</th>
+          <th>Price (low)</th>
+          <th>Price (high)</th>
         </tr>
       </thead>
       <tbody>
@@ -112,7 +152,13 @@ function mkDetailsTable (pathInfo) {
       <tfoot>
         <tr>
           <td>${numberWithCommas(qtySum)}</td>
-          <td>Sum</td>
+          <td>
+            <b>
+              <i>Sum</i>
+            </b>
+          </td>
+          <td>—</td>
+          <td>—</td>
         </tr>
       </tfoot>
     </table>`;
@@ -120,8 +166,8 @@ function mkDetailsTable (pathInfo) {
 
 let mkDataUrl = urlParams => baseUrl
       + '/liquidity/' + urlParams.crypto
-      + `?slippage=${urlParams.slippage}&numeraire=${urlParams.numeraire}`
-      + '&limit=' + urlParams.limit
+      + `/${urlParams.numeraire}/${urlParams.slippage}`
+      + '?limit=' + urlParams.limit
       + (urlParams.fromDate ? '&from=' + urlParams.fromDate : '')
       + (urlParams.toDate ? "&to=" + urlParams.toDate : '');
 
@@ -131,9 +177,13 @@ function uniq(a) {
     });
 }
 
-// source: https://stackoverflow.com/a/2901298/700597
 function numberWithCommas(x) {
-    return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    // source: https://stackoverflow.com/a/2901298/700597
+    const integerWithCommas = n => n.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    const numSplit = x.toString().split(".");
+    const wholePart = numSplit[0];
+    const fractionalPart = numSplit[1];
+    return integerWithCommas(wholePart) + (fractionalPart ? "." + fractionalPart : "");
 }
 
 var calcCountQueue = [];
@@ -167,8 +217,14 @@ async function runUpdateCount() {
 
 async function do_it() {
   const urlParams = Config.fromWindowHash();
+  createBarChart(urlParams);
   createGraph(urlParams);
   createTimeSeries(urlParams);
+}
+
+async function createBarChart(urlParams) {
+  const barChartSpec = await mkBarChartSpec(urlParams);
+  return vegaEmbed('#bar_chart', barChartSpec).catch(console.error);
 }
 
 async function createGraph(urlParams) {
@@ -182,7 +238,9 @@ async function createTimeSeries(urlParams) {
   var spec =
   {
     "$schema": "https://vega.github.io/schema/vega-lite/v4.json",
+    "background": chartBackgroundColor,
     "data": {
+      "name": "time_series",
       "url": mkDataUrl(urlParams),
     },
     "format": {
@@ -230,7 +288,12 @@ async function createTimeSeries(urlParams) {
           "color": {
             "field": "currency",
             "type": "nominal",
-            "title": "Currency"
+            "title": "Currency",
+            "sort": {
+              "op": "max",
+              "field": "qty_mm",
+              "order": "descending"
+            }
           },
           "y": {
             "field": "qty_mm",
@@ -277,6 +340,9 @@ async function createTimeSeries(urlParams) {
 
   return vegaEmbed('#time_series', spec).then(function(result) {
     // Access the Vega view instance (https://vega.github.io/vega/docs/api/view/) as result.view
+    result.view.addDataListener('time_series', function(name, value) {
+      console.log(name, value);
+    });
   }).catch(console.error);
 }
 
@@ -285,6 +351,7 @@ function mkGraphSpec(urlParams) {
   var json = {
     "$schema": "https://vega.github.io/schema/vega/v5.json",
     "description": "TODO",
+    "background": chartBackgroundColor,
     "width": 850,
     "height": 700,
     "padding": 0,
@@ -367,8 +434,8 @@ function mkGraphSpec(urlParams) {
         "name": "linkLength",
         "value": 80
       },
-      {"name": "static", "value": false, "bind": {"input": "checkbox"}},
-      {"name": "tooltip", "value": true, "bind": {"input": "checkbox"}},
+      {"name": "tooltip", "description": "Show tooltip on hover", "value": true, "bind": {"input": "checkbox"}},
+      {"name": "static", "description": "Do not snap back after dragging", "value": false, "bind": {"input": "checkbox"}},
       {
         "description": "State variable for active node fix status.",
         "name": "fix",
@@ -522,6 +589,110 @@ function mkGraphSpec(urlParams) {
         ]
       }
     ]
+  };
+  return json;
+}
+
+async function mkBarChartSpec(urlParams) {
+  const mkDataUrl = (limit) =>
+    `${baseUrl}/liquidity/all/newest/${urlParams.numeraire}/${urlParams.slippage}?limit=${limit}`;
+
+  const fetchChartDate = async () => {
+    const resp = await fetch(mkDataUrl(1));
+    const detailsJson = await resp.json();
+    return new Date(detailsJson[0].run.time_start);
+  }
+
+  const formatDate = (date) => {
+    const options = { year: 'numeric', month: 'long', day: 'numeric' };
+    return date.toLocaleDateString("en-US", options);
+}
+
+  var chartDateStr;
+  try {
+    const chartDate = await fetchChartDate();
+    chartDateStr = `(${formatDate(chartDate)})`;
+  } catch (error) {
+    console.error("failed to fetch bar chart date", error);
+    chartDateStr = "";
+  }
+
+  var json = {
+    "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+    "background": chartBackgroundColor,
+    "width": 800,
+    "height": 450,
+    "data": {
+      "url": mkDataUrl(15),
+      "name": "raw_data"
+    },
+    "title": `Buy/sell liquidity at ${urlParams.slippage}% slippage ${chartDateStr}`,
+    "transform": [
+      {"calculate": "[datum.qty_buy, datum.qty_sell]", "as": "qty_type_qty"},
+      {"calculate": "['buy', 'sell']", "as": "qty_type"},
+      {"flatten": ["qty_type_qty", "qty_type"]},
+      {"calculate": "datum.qty_type_qty * 1e-6", "as": "qty_type_qty_mm"},
+      {
+        "calculate": "format(datum.qty_type_qty_mm, ',.4r') + ' MM USD'",
+        "as": "tooltip"
+      }
+    ],
+    "facet": {
+      "field": "currency",
+      "title": "Currency",
+      "type": "nominal",
+      "sort": {"op": "sum", "field": "sum_qty_type_qty", "order": "descending"},
+      "header": {"orient": "bottom"}
+    },
+    "spec": {
+      "encoding": {
+        "y": {
+          "aggregate": "sum",
+          "field": "qty_type_qty_mm",
+          "title": "Quantity (MM USD)",
+          "axis": {"grid": false},
+          "scale": {"type": "log"}
+        },
+        "x": {"field": "qty_type", "type": "nominal", "axis": null}
+      },
+      "layer": [
+        {
+          "mark": "bar",
+          "encoding": {
+            "color": {
+              "field": "qty_type",
+              "title": "Direction",
+              "scale": {"range": ["#06d6a0", "#ef476f"]}
+            },
+            "tooltip": {"field": "tooltip", "type": "ordinal"}
+          }
+        },
+        {
+          "mark": {
+            "type": "text",
+            "dx": -5,
+            "angle": 90,
+            "baseline": "middle",
+            "align": "right"
+          },
+          "encoding": {
+            "text": {
+              "aggregate": "sum",
+              "field": "qty_type_qty",
+              "type": "quantitative",
+              "format": "3",
+              "formatType": "financial"
+            }
+          }
+        }
+      ]
+    },
+    "config": {
+      "view": {"stroke": "transparent"},
+      "facet": {"spacing": 10},
+      "axis": {"domainWidth": 1},
+      "customFormatTypes": true
+    }
   };
   return json;
 }

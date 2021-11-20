@@ -3,12 +3,13 @@
 <head>
   <title>Cryptocurrency liquidity</title>
 
+  <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <link rel="stylesheet" href="css/bare.min.css">
   <link rel="stylesheet" href="css/gh-fork-ribbon.css" />
-  <script src="https://cdn.jsdelivr.net/npm/vega@5.17.1"></script>
-  <script src="https://cdn.jsdelivr.net/npm/vega-lite@4.17.0"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vega@5.20.2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vega-lite@5.1.0"></script>
   <script src="https://cdn.jsdelivr.net/npm/vega-embed@6"></script>
 
   <style>
@@ -31,22 +32,48 @@
       opacity: 1;
     }
 
-    div#graph {
+    #graph, #bar_chart, #time_series {
       padding: 0px;
-      /* border-width: thin;
-      border-style: solid; */
+      max-width: 850px;
     }
 
     canvas {
       max-width: 100%;
       height: auto !important;
     }
+
+    /* maintenance */
+    div#banner {
+       position: absolute;
+       top: 0;
+       left: 0;
+       width: 100%;
+     }
+     div#banner-content {
+       width: 500px;
+       margin: 0 auto;
+       padding: 10px;
+       border: 1px solid #000;
+       background-color: #DF6464;
+    }
+
+    /* center#main-content {
+       padding-top: 70px;
+    } */
+
+    /* maintenance */
   </style>
 </head>
 
 <body onload="runUpdateCount(); do_it();">
 <a class="github-fork-ribbon right-top" href="https://github.com/cryptomarketdepth/main" data-ribbon="Fork me on GitHub" title="Fork me on GitHub">Fork me on GitHub</a>
-<center>
+<!-- <div id="banner">
+  <div id="banner-content">
+      <b>Maintenance:</b> this site is under maintenance.
+      Please come back later.
+  </div>
+</div> -->
+<center id="main-content">
   <div>
     <h1>Cryptocurrency liquidity</h1>
     <p>
@@ -60,7 +87,15 @@
       USD that can be exchanged for a given cryptocurrency while moving the price in any
       market by at most 0.5%.
     </p>
-    <h2>Overview</h2>
+    <h2>Top 15 (buy/sell)</h2>
+    <p>
+      This chart shows the 15 most liquid cryptocurrencies. It includes both <i>buy</i> liquidity
+      (how much you can <i>buy</i> of the given cryptocurrency while moving the price in any market by no more than 0.5%)
+      and <i>sell</i> liquidity
+      (how much you can <i>sell</i> of the given cryptocurrency while moving the price in any market by no more than 0.5%).
+      <div id="bar_chart"></div>
+    </p>
+    <h2>Network graph</h2>
     <p>
       The chart below gives an overview of cryptocurrency liquidity as measured within the last 24 hours.
       It includes the 200 most liquid cryptocurrencies.
