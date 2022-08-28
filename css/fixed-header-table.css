@@ -1,0 +1,28 @@
+/* Fix table head */
+.tableFixHead    {
+  width: 850px;
+  overflow: auto;
+  height: 350px;
+}
+.tableFixHead th, caption {
+  position: sticky;
+  top: 0;
+}
+
+.tableFixHead table {
+  border-collapse: collapse;
+  width: 100%;
+  background:#eee;
+  font-size: 1.2rem;
+}
+.tableFixHead th, td {
+  padding: 8px 16px;
+}
+.tableFixHead th {
+  background:#bbb;
+  min-width: 8rem;
+}
+
+.tableFixHead tbody tr:nth-child(odd){
+  background-color: #ddd;
+}
