@@ -33,7 +33,7 @@
       opacity: 1;
     }
 
-    #graph, #bar_chart, #time_series {
+    #graph, #bar_chart, #time_series, #depth_chart {
       padding: 0px;
       max-width: 850px;
     }
@@ -126,9 +126,17 @@
       in the Bitfinex ETH/BTC market, and exchanging the acquired ETH for USD in the Bitstamp ETH/USD market.
     </p>
 
-    <div id="details" class="tableFixHead">
+    <div id="details">
       <p style="color: gray;">
         <i>Click chart point to load details</i>
+      </p>
+    </div>
+
+    <h2 id="depth_chart_header">Order book depth chart</h2>
+
+    <div id="depth_chart" style="height: 500px; background-color: #f2f2f2;">
+      <p style="color: gray;">
+        <i>Click a venue name in the table above to load a depth chart</i>
       </p>
     </div>
 
@@ -147,4 +155,15 @@
 <img src='images/spinner.gif' style="visibility:hidden;" height=0 width=0>
 </body>
 <script src="index.js"></script>
+
+  <!-- BEGIN: depth chart -->
+  <link rel="stylesheet" href="depth_chart/external/amcharts/export.css" type="text/css" media="all" />
+  <script src="depth_chart/external/amcharts/amcharts.js"></script>
+  <script src="depth_chart/external/amcharts/serial.js"></script>
+  <script src="depth_chart/external/amcharts/dataloader.min.js"></script>
+  <script src="depth_chart/external/amcharts/export.min.js"></script>
+  <script src="depth_chart/external/amcharts/light.js"></script>
+  <script src="depth_chart/depth_chart.js"></script>
+  <!-- END: depth chart -->
+
 </html>

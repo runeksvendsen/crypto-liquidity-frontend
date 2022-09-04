@@ -31,6 +31,7 @@ vega.expressionFunction('financial', function(number, params) {
 
 const detailsElem = document.getElementById('details');
 const buySellPathsElem = document.getElementById('buy_sell_paths');
+const depthChartHeader = document.getElementById('depth_chart_header');
 const chartBackgroundColor = "#f2f2f2";
 
 class Config {
@@ -79,6 +80,7 @@ async function locationHashChanged() {
       const resp = await fetchPromise;
       const detailsJson = await resp.json();
       // TODO: update "detailsElem" with "urlParams"
+      detailsElem.className = 'tableFixHead';
       detailsElem.innerHTML = mkDetailsTable(parseDetailsJson(detailsJson));
     } else {
       do_it();
@@ -112,7 +114,7 @@ function parseDetailsJson(detailsJson) {
           let leftCurrency = state[1];
           let venue = pathObj.venues[i];
           let apiUrl = `${baseUrl}/run/${run.id}/book/${venue}/${leftCurrency}/${rightCurrency}`;
-          let venueLink = `<a href=${apiUrl}>--${venue}--></a>`;
+          let venueLink = `<a href="javascript:pathVenueClicked('${apiUrl}', '${run.time_start}')">--${venue}--></a>`;
           let newPath = ` ${venueLink} ${rightCurrency}`;
           return [pathState + newPath, rightCurrency]
           },
@@ -127,6 +129,11 @@ function parseDetailsJson(detailsJson) {
         return new PathInfo(pi.qty, toPathDescrFold(pathDescr), pi.price_low, pi.price_high);
       }
   return [[calcInfo.currency, calcInfo.numeraire, run.time_start], pathList.map(qtyPath)];
+}
+
+function pathVenueClicked(apiUrl, run_time_start) {
+  depthChartHeader.scrollIntoView();
+  updateDataUrl(apiUrl, run_time_start);
 }
 
 function mkDetailsTable (pathInfo) {
