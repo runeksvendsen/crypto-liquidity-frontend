@@ -71,6 +71,8 @@ async function locationHashChanged() {
 
     // check is "details"
     if (hashLoc.substring(0,2) === "d:") {
+      detailsElem.innerHTML = "<img src='images/spinner.gif' width=50 height=50>"
+      buySellPathsElem.scrollIntoView();
       const urlParams = hashLoc.substring(2);
       const fetchPromise = fetch(baseUrl + '/' + urlParams);
       // TODO: enable for "detailsElem" here
@@ -78,7 +80,6 @@ async function locationHashChanged() {
       const detailsJson = await resp.json();
       // TODO: update "detailsElem" with "urlParams"
       detailsElem.innerHTML = mkDetailsTable(parseDetailsJson(detailsJson));
-      buySellPathsElem.scrollIntoView();
     } else {
       do_it();
     }
