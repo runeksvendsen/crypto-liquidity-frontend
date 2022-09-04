@@ -104,19 +104,26 @@ function parseDetailsJson(detailsJson) {
   const data = detailsJson[1][0];
   const calcInfo = data[0];
   const pathList = data[1];
-  let toPathDescr = (pathObj) =>
+  let toPathDescrFold = (pathObj) =>
       {
-        let pathStringList = Array.prototype.map.call(pathObj.currencys, function(currency, i) {
+        let mkPathStringList = (startCurrency) => pathObj.currencys.reduce(function(state, rightCurrency, i, _) {
+          let pathState = state[0];
+          let leftCurrency = state[1];
           let venue = pathObj.venues[i];
-          return " --" + venue + "--> " + currency
-          }
+          let apiUrl = `${baseUrl}/run/${run.id}/book/${venue}/${leftCurrency}/${rightCurrency}`;
+          let venueLink = `<a href=${apiUrl}>--${venue}--></a>`;
+          let newPath = ` ${venueLink} ${rightCurrency}`;
+          return [pathState + newPath, rightCurrency]
+          },
+          [startCurrency, startCurrency]
         );
-        return pathObj.start + pathStringList.join("");
+        let pathStringRes = mkPathStringList(pathObj.start);
+        return pathStringRes[0];
       }
-  let qtyPath = (pathListElem) =>
+      let qtyPath = (pathListElem) =>
       { let pi = pathListElem[0];
         let pathDescr = pathListElem[1];
-        return new PathInfo(pi.qty, toPathDescr(pathDescr), pi.price_low, pi.price_high);
+        return new PathInfo(pi.qty, toPathDescrFold(pathDescr), pi.price_low, pi.price_high);
       }
   return [[calcInfo.currency, calcInfo.numeraire, run.time_start], pathList.map(qtyPath)];
 }
