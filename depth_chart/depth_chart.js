@@ -1,75 +1,84 @@
-var chart = AmCharts.makeChart("depth_chart", {
-  "type": "serial",
-  "theme": "light",
-  "thousandsSeparator": " ",
-  "titles": [{
-    "text": "",
-    "align": "middle",
-    "bold": false,
-    "size": 30,
-    "tabIndex": 1
-    },{
+var chart = null;
+
+function ensureChartInit() {
+  if (chart === null) {
+    chart = initChart();
+  }
+}
+
+const initChart = () =>
+  AmCharts.makeChart("depth_chart", {
+    "type": "serial",
+    "theme": "light",
+    "thousandsSeparator": " ",
+    "titles": [{
       "text": "",
       "align": "middle",
       "bold": false,
-      "size": 17,
+      "size": 30,
       "tabIndex": 1
+      },{
+        "text": "",
+        "align": "middle",
+        "bold": false,
+        "size": 17,
+        "tabIndex": 1
+      }
+    ],
+    "graphs": [{
+      "id": "bids",
+      "fillAlphas": 0.1,
+      "lineAlpha": 1,
+      "lineThickness": 2,
+      "lineColor": "#0f0",
+      "type": "step",
+      "valueField": "bidstotalvolume",
+      "balloonFunction": balloon
+    }, {
+      "id": "asks",
+      "fillAlphas": 0.1,
+      "lineAlpha": 1,
+      "lineThickness": 2,
+      "lineColor": "#f00",
+      "type": "step",
+      "valueField": "askstotalvolume",
+      "balloonFunction": balloon
+    }, {
+      "lineAlpha": 0,
+      "fillAlphas": 0.2,
+      "lineColor": "#000",
+      "type": "column",
+      "clustered": false,
+      "valueField": "bidsvolume",
+      "showBalloon": false
+    }, {
+      "lineAlpha": 0,
+      "fillAlphas": 0.2,
+      "lineColor": "#000",
+      "type": "column",
+      "clustered": false,
+      "valueField": "asksvolume",
+      "showBalloon": false
+    }],
+    "categoryField": "value",
+    "chartCursor": {},
+    "balloon": {
+      "textAlign": "left"
+    },
+    "valueAxes": [{
+      "title": "Volume"
+    }],
+    "categoryAxis": {
+      "title": "Price",
+      "minHorizontalGap": 100,
+      "startOnAxis": true,
+      "showFirstLabel": false,
+      "showLastLabel": false
+    },
+    "export": {
+      "enabled": true
     }
-  ],
-  "graphs": [{
-    "id": "bids",
-    "fillAlphas": 0.1,
-    "lineAlpha": 1,
-    "lineThickness": 2,
-    "lineColor": "#0f0",
-    "type": "step",
-    "valueField": "bidstotalvolume",
-    "balloonFunction": balloon
-  }, {
-    "id": "asks",
-    "fillAlphas": 0.1,
-    "lineAlpha": 1,
-    "lineThickness": 2,
-    "lineColor": "#f00",
-    "type": "step",
-    "valueField": "askstotalvolume",
-    "balloonFunction": balloon
-  }, {
-    "lineAlpha": 0,
-    "fillAlphas": 0.2,
-    "lineColor": "#000",
-    "type": "column",
-    "clustered": false,
-    "valueField": "bidsvolume",
-    "showBalloon": false
-  }, {
-    "lineAlpha": 0,
-    "fillAlphas": 0.2,
-    "lineColor": "#000",
-    "type": "column",
-    "clustered": false,
-    "valueField": "asksvolume",
-    "showBalloon": false
-  }],
-  "categoryField": "value",
-  "chartCursor": {},
-  "balloon": {
-    "textAlign": "left"
-  },
-  "valueAxes": [{
-    "title": "Volume"
-  }],
-  "categoryAxis": {
-    "title": "Price",
-    "minHorizontalGap": 100,
-    "startOnAxis": true,
-    "showFirstLabel": false,
-    "showLastLabel": false
-  },
-  "export": {
-    "enabled": true
-  }
-});
+  });
 
 function postProcess(dataRaw) {
   const data = dataRaw.result;
@@ -149,7 +158,7 @@ function balloonRaw(item, graph, baseTxt) {
   const volume = graph.id == "asks" ? ctx.asksvolume : ctx.bidsvolume;
 
   const txt = "Price: <strong>" + formatNumber(ctx.value, graph.chart, 4) + "</strong><br />"
-    + "Total volume: <strong>" + formatNumber(totalVolume, graph.chart, 4) + " " + baseTxt + "</strong><br />"
+    + "Cumulative volume: <strong>" + formatNumber(totalVolume, graph.chart, 4) + " " + baseTxt + "</strong><br />"
     + "Volume: <strong>" + formatNumber(volume, graph.chart, 4) + " " + baseTxt + "</strong>";
 
   return txt;
@@ -174,6 +183,8 @@ function updateDataUrl(url, run_time_start) {
 }
 
 function setDataSet(jsonObject, run_time_start) {
+  ensureChartInit();
+
   let res = jsonObject.result;
 
   if (res === null) {
@@ -182,7 +193,6 @@ function setDataSet(jsonObject, run_time_start) {
   }
 
   // Chart titles
-  console.log(res);
   chart.titles[0].text = `${res.venue} ${res.base}/${res.quote}`; // Title
   const time = new Date(run_time_start);
   chart.titles[1].text = `${time.toLocaleDateString()} ${time.toLocaleTimeString()}`; // Subtitle
