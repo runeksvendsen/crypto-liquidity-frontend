@@ -147,8 +147,8 @@ function mkDetailsTable (pathInfo) {
         `<tr>
           <td>${numberWithCommas(qtyPath.quantity)}</td>
           <td>${qtyPath.pathDescr}</td>
-          <td>${numberWithCommas(qtyPath.priceLow.toPrecision(6))}</td>
-          <td>${numberWithCommas(qtyPath.priceHigh.toPrecision(6))}</td>
+          <td>${numberWithCommas(Number(qtyPath.priceLow.toPrecision(6)))}</td>
+          <td>${numberWithCommas(Number(qtyPath.priceHigh.toPrecision(6)))}</td>
         </tr>`
       ).join("\n");
   return `<table>
